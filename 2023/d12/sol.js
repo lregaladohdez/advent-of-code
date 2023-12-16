@@ -11,8 +11,6 @@ function parse() {
   return {patterns, groups};
 }
 
-let memo = {};
-
 function combinationsInPattern(pattern, groups) {
   //   if (`${pattern}-${groups.join('-')}-${line}` in memo) {
   //     return memo[`${pattern}-${groups.join('-')}-${line}`];
@@ -67,17 +65,47 @@ function combinationsInPattern(pattern, groups) {
       });
     }
   }
-  //   console.log(pattern, groups, Object.keys(solutions));
   return Object.keys(solutions).length;
+}
+
+let memo = {};
+
+function combinationsRecursive(pattern, groups) {
+  const key = `${pattern}:${groups.join('-')}`;
+  if (key in memo) {
+    return memo[key];
+  }
+  if (pattern === '') {
+    return groups.length === 0 ? 1 : 0;
+  }
+  if (groups.length === 0) {
+    return pattern.includes('#') ? 0 : 1;
+  }
+  let variants = 0;
+  if (pattern[0] === '.' || pattern[0] === '?') {
+    variants += combinationsRecursive(pattern.slice(1), groups);
+  }
+  if (pattern[0] === '#' || pattern[0] === '?') {
+    if (
+      groups[0] <= pattern.length &&
+      !pattern.slice(0, groups[0]).includes('.') &&
+      pattern[groups[0]] !== '#'
+    ) {
+      variants += combinationsRecursive(
+        pattern.slice(groups[0] + 1),
+        groups.slice(1),
+      );
+    }
+  }
+  memo[key] = variants;
+  return variants;
 }
 
 function sol1() {
   const {patterns, groups} = parse();
-  //   console.log(patterns, groups);
-
   const combinations = patterns.map((p, i) => {
     memo = {};
-    return combinationsInPattern(p, groups[i]);
+    return combinationsRecursive(p, groups[i]);
   });
   console.log(
     'Sol1:',
@@ -93,14 +121,13 @@ function sol2() {
     memo = {};
     const augmentedPattern = new Array(5).fill(p).join('?');
     const augmentedGroup = new Array(5).fill(groups[i]).flat();
-    console.log(augmentedPattern, augmentedGroup);
-    return combinationsInPattern(augmentedPattern, augmentedGroup);
+    memo = {};
+    return combinationsRecursive(augmentedPattern, augmentedGroup);
   });
-  //   console.log(combinations, memo);
   console.log(
-    'Sol1:',
+    'Sol2:',
     combinations.reduce((a, b) => a + b, 0),
   );
 }
-
 sol1();
+sol2();
